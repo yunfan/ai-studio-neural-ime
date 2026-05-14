@@ -12,6 +12,12 @@ The candidate scoring is driven by a custom-built Multi-Layer Perceptron (MLP) (
 - **Hidden Layer:** A lightweight intermediate mapping (e.g., 8 neurons) with ReLU activation allowing it to uncover nonlinear interactions (e.g., frequency weighing heavier only on exact matches).
 - **Output Layer:** A singular Sigmoid activated neuron producing a probability score (0.0 to 1.0) indicating how likely this candidate is the target.
 
+## 2.1 Dynamic Pinyin Segmentation
+The engine does not strictly require exact exact match for the whole input string `keyBuffer`. It intelligently matches prefixes and predicts the optimal slice through the typing sequence.
+- Users can manually override the neural network's suggested bounds by pressing `[`/`]` keys (`shrinkSegment`/`expandSegment`).
+- Manual slicing truncates the evaluated Pinyin context, forcing candidates into specific segment boundaries.
+- The UI visibly highlights the bounds of the top selected candidate to indicate which slice spacebar will consume.
+
 ## 3. Real-Time On-Device Learning (Backpropagation)
 When the user types and selects a candidate (e.g., using spacebar or number keys), the engine doesn't just bump a frequency counter. 
 1. It gathers the input features for the selected word and treats it as a target output of `1.0`.

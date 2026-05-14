@@ -6,6 +6,7 @@ type Engine = ReturnType<typeof useInputEngine>;
 export default function DemoTab({ engine }: { engine: Engine }) {
   const engineRef = useRef(engine);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const customInputRef = useRef<HTMLInputElement>(null);
   const [customWord, setCustomWord] = useState('');
   
   useEffect(() => {
@@ -45,6 +46,25 @@ export default function DemoTab({ engine }: { engine: Engine }) {
                 currentEngine.nextPage();
             }
         }
+      } else if (e.key === '[') {
+          if (currentEngine.keyBuffer) {
+              e.preventDefault();
+              currentEngine.shrinkSegment();
+          }
+      } else if (e.key === ']') {
+          if (currentEngine.keyBuffer) {
+              e.preventDefault();
+              currentEngine.expandSegment();
+          }
+      } else if (e.key === 'Tab') {
+          if (currentEngine.keyBuffer) {
+              e.preventDefault();
+              if (document.activeElement === textareaRef.current) {
+                  customInputRef.current?.focus();
+              } else {
+                  textareaRef.current?.focus();
+              }
+          }
       } else if (e.key === ' ' || /^[1-8]$/.test(e.key)) {
         if (currentEngine.keyBuffer) {
             e.preventDefault();
@@ -168,13 +188,30 @@ export default function DemoTab({ engine }: { engine: Engine }) {
             {engine.keyBuffer && (
                 <div className="flex items-center bg-zinc-100 hover:bg-zinc-200 transition-colors duration-200 rounded-xl overflow-hidden shadow-sm h-[44px]">
                     <input
+                        ref={customInputRef}
                         type="text"
                         placeholder="添加词"
                         value={customWord}
                         onChange={(e) => setCustomWord(e.target.value)}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && customWord.trim()) {
-                                engine.teachWord(customWord.trim(), engine.keyBuffer);
+                                const ta = textareaRef.current;
+                                const text = customWord.trim();
+                                if (ta) {
+                                    const start = ta.selectionStart;
+                                    const end = ta.selectionEnd;
+                                    const currentText = engine.inputText;
+                                    const newText = currentText.substring(0, start) + text + currentText.substring(end);
+                                    engine.setInputText(newText);
+                                    setTimeout(() => {
+                                        ta.focus();
+                                        ta.selectionStart = ta.selectionEnd = start + text.length;
+                                    }, 0);
+                                } else {
+                                    engine.setInputText(engine.inputText + text);
+                                }
+                                engine.teachWord(text, engine.keyBuffer);
+                                engine.clearBuffer();
                                 setCustomWord('');
                             }
                             if (e.key === 'Backspace') {
@@ -185,8 +222,24 @@ export default function DemoTab({ engine }: { engine: Engine }) {
                     />
                     <button
                         onClick={() => {
-                            if (customWord.trim()) {
-                                engine.teachWord(customWord.trim(), engine.keyBuffer);
+                            const text = customWord.trim();
+                            if (text) {
+                                const ta = textareaRef.current;
+                                if (ta) {
+                                    const start = ta.selectionStart;
+                                    const end = ta.selectionEnd;
+                                    const currentText = engine.inputText;
+                                    const newText = currentText.substring(0, start) + text + currentText.substring(end);
+                                    engine.setInputText(newText);
+                                    setTimeout(() => {
+                                        ta.focus();
+                                        ta.selectionStart = ta.selectionEnd = start + text.length;
+                                    }, 0);
+                                } else {
+                                    engine.setInputText(engine.inputText + text);
+                                }
+                                engine.teachWord(text, engine.keyBuffer);
+                                engine.clearBuffer();
                                 setCustomWord('');
                             }
                         }}
@@ -203,7 +256,17 @@ export default function DemoTab({ engine }: { engine: Engine }) {
         <div className="text-2xl md:text-3xl font-mono text-zinc-500 relative inline-block border-b-2 border-transparent transition-colors min-h-[40px]">
             {engine.keyBuffer ? (
                 <>
-                    {engine.keyBuffer}
+                    {(() => {
+                        const targetLen = engine.activeSegmentLen !== null ? engine.activeSegmentLen : (engine.candidates.length > 0 ? engine.candidates[0].consumeLen : engine.keyBuffer.length);
+                        const highlighted = engine.keyBuffer.slice(0, targetLen);
+                        const rest = engine.keyBuffer.slice(targetLen);
+                        return (
+                            <span>
+                                <span className="bg-zinc-800 text-white rounded px-1">{highlighted}</span>
+                                <span>{rest}</span>
+                            </span>
+                        );
+                    })()}
                     <span className="w-0.5 h-[1.2em] bg-zinc-400 absolute right-[-8px] top-1/2 -translate-y-1/2 animate-pulse"></span>
                 </>
             ) : (
@@ -214,8 +277,9 @@ export default function DemoTab({ engine }: { engine: Engine }) {
             )}
         </div>
         
-        <div className="mt-16 text-xs text-zinc-400 uppercase tracking-widest font-medium">
-            Type with Keyboard (A-Z, Space, 1-8)
+        <div className="mt-16 flex flex-col items-center gap-1 text-xs text-zinc-400 uppercase tracking-widest font-medium">
+            <span>Type with Keyboard (A-Z, Space, 1-8)</span>
+            <span className="opacity-70">Use [ ] to manually slice pinyin bounds, Shift+Tab / Tab to switch focus</span>
         </div>
     </div>
   )

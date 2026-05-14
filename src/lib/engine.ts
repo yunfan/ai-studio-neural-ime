@@ -45,6 +45,7 @@ export function useInputEngine() {
   const [keyBuffer, setKeyBuffer] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const [backend, setBackend] = useState<ComputeBackend>('cpu');
+  const [activeSegmentLen, setActiveSegmentLen] = useState<number | null>(null);
   const [allCandidates, setAllCandidates] = useState<Candidate[]>([]);
 
   const mlp = useMemo(() => {
@@ -69,6 +70,8 @@ export function useInputEngine() {
          return;
      }
 
+     const effectiveKeyBuffer = activeSegmentLen !== null ? keyBuffer.slice(0, activeSegmentLen) : keyBuffer;
+
      let active = true;
      const combinedVocab = [...baseVocab, ...weights.customVocab];
      const filtered: any[] = [];
@@ -78,10 +81,10 @@ export function useInputEngine() {
         let consumeLen = 0;
         let matchType = '';
         
-        if (keyBuffer.startsWith(v.pinyin)) { consumeLen = v.pinyin.length; matchType = 'full'; isExactMatch = 1.0; }
-        else if (v.pinyin.startsWith(keyBuffer)) { consumeLen = keyBuffer.length; matchType = 'prefix'; }
-        else if (keyBuffer.startsWith(v.initials)) { consumeLen = v.initials.length; matchType = 'initials'; isExactMatch = 1.0; }
-        else if (v.initials.startsWith(keyBuffer)) { consumeLen = keyBuffer.length; matchType = 'initials_prefix'; }
+        if (effectiveKeyBuffer.startsWith(v.pinyin)) { consumeLen = v.pinyin.length; matchType = 'full'; isExactMatch = 1.0; }
+        else if (v.pinyin.startsWith(effectiveKeyBuffer)) { consumeLen = effectiveKeyBuffer.length; matchType = 'prefix'; }
+        else if (effectiveKeyBuffer.startsWith(v.initials)) { consumeLen = v.initials.length; matchType = 'initials'; isExactMatch = 1.0; }
+        else if (v.initials.startsWith(effectiveKeyBuffer)) { consumeLen = effectiveKeyBuffer.length; matchType = 'initials_prefix'; }
         else { continue; }
 
         filtered.push({ v, isExactMatch, consumeLen, matchType });
@@ -126,6 +129,7 @@ export function useInputEngine() {
           return prev + char;
       });
       setPageIndex(0);
+      setActiveSegmentLen(null);
   }, []);
 
   const commitCandidate = useCallback((index: number, autoAppend: boolean = true) => {
@@ -161,6 +165,7 @@ export function useInputEngine() {
       
       setKeyBuffer(prevBuffer => prevBuffer.slice(chosen.consumeLen));
       setPageIndex(0);
+      setActiveSegmentLen(null);
   }, [candidates, updateWeights, weights.nnModel]);
 
   const handleBackspace = useCallback(() => {
@@ -169,12 +174,20 @@ export function useInputEngine() {
           return prev;
       });
       setPageIndex(0);
+      setActiveSegmentLen(null);
   }, []);
 
   const clearInput = useCallback(() => {
      setInputText("");
      setKeyBuffer("");
      setPageIndex(0);
+     setActiveSegmentLen(null);
+  }, []);
+
+  const clearBuffer = useCallback(() => {
+      setKeyBuffer("");
+      setPageIndex(0);
+      setActiveSegmentLen(null);
   }, []);
 
   const teachWord = useCallback((text: string, pinyin: string) => {
@@ -233,6 +246,23 @@ export function useInputEngine() {
       });
   }, [baseVocab, updateWeights]);
 
+  const shrinkSegment = useCallback(() => {
+      setActiveSegmentLen(prev => {
+          const current = prev !== null ? prev : (allCandidates.length > 0 ? allCandidates[0].consumeLen : keyBuffer.length);
+          return Math.max(1, current - 1);
+      });
+      setPageIndex(0);
+  }, [allCandidates, keyBuffer.length]);
+
+  const expandSegment = useCallback(() => {
+      setActiveSegmentLen(prev => {
+          const current = prev !== null ? prev : (allCandidates.length > 0 ? allCandidates[0].consumeLen : keyBuffer.length);
+          if (current >= keyBuffer.length) return null; // reset
+          return Math.min(keyBuffer.length, current + 1);
+      });
+      setPageIndex(0);
+  }, [allCandidates, keyBuffer.length]);
+
   return {
       inputText,
       keyBuffer,
@@ -244,6 +274,7 @@ export function useInputEngine() {
       handleBackspace,
       commitCandidate,
       clearInput,
+      clearBuffer,
       teachWord,
       bulkTrain,
       setInputText,
@@ -252,6 +283,9 @@ export function useInputEngine() {
       pageIndex,
       totalPages: Math.ceil(allCandidates.length / 8),
       backend,
-      setBackend
+      setBackend,
+      activeSegmentLen,
+      shrinkSegment,
+      expandSegment
   };
 }
