@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import GENERATED_VOCAB from './generated-dict.json';
+import { GENERATED_VOCAB } from './dict-data/index';
 import { parsePinyinTxt } from './dict';
 import { MLP } from './nn';
 import { predictBatch, ComputeBackend } from './backends';

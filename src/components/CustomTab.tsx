@@ -20,17 +20,18 @@ export default function CustomTab({ engine }: { engine: Engine }) {
         const modelData = {
             metadata: {
                 name: "Neural Input Model (Fine-tuned)",
-                version: "3.0",
+                version: "3.5",
                 type: "compiled_model",
                 exportTime: new Date().toISOString(),
-                architecture: "Hidden-State Streaming",
+                architecture: "MLP-Backprop-Streaming",
                 quantization: "FP32",
                 paramsCount: `${Object.keys(mergedWeights).length} Nodes`
             },
             modelStructure: {
                 vocabSize: Object.keys(mergedWeights).length,
                 customTokens: engine.weights.customVocab,
-                nodes: mergedWeights
+                nodes: mergedWeights,
+                nnModel: engine.weights.nnModel
             }
         };
         const data = JSON.stringify(modelData, null, 2);
@@ -56,7 +57,8 @@ export default function CustomTab({ engine }: { engine: Engine }) {
                     engine.updateWeights(() => ({
                         base: json.modelStructure.nodes,
                         adapter: {}, // Fused, so no separate adapter anymore
-                        customVocab: json.modelStructure.customTokens || []
+                        customVocab: json.modelStructure.customTokens || [],
+                        nnModel: json.modelStructure.nnModel || undefined
                     }));
                     setMsg("模型导入成功");
                     setTimeout(() => setMsg(""), 3000);

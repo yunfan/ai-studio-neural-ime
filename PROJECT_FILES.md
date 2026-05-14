@@ -13,6 +13,6 @@
 ## Core Engine & AI Systems
 - `src/lib/engine.ts`: The central orchestration hook (`useInputEngine`). It binds keystrokes to the underlying dictionary, neural network inference, and handles candidate pagination. State is persisted in `localStorage`.
 - `src/lib/dict.ts`: Handles dictionary initialization and generic parsing operations.
-- `src/lib/generated-dict.json`: Compressed built-in Pinyin dictionary database (generated at build time from `pinyin.txt`).
+- `src/lib/dict-data/`: Contains the built-in Pinyin dictionary database split by initials (a.json, b.json, etc.) and an `index.ts` to export the combined `GENERATED_VOCAB`. This avoids single massive JSON files that cause build pipeline memory/parsing limitations.
 - `src/lib/nn.ts`: Contains a true from-scratch Multi-Layer Perceptron (MLP) Neural Network implementation. Supports forward propagation (inference) and backward propagation (training) for dynamic user scoring.
 - `src/lib/backends.ts`: Manages different compute backends (CPU, Web Worker, WASM, WebGL, WebGPU). Includes a functional Web Worker implementation to offload NN inferences into background threads to avoid UI stalling.
