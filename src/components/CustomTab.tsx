@@ -125,7 +125,7 @@ export default function CustomTab({ engine }: { engine: Engine }) {
                 管理处于内存中的神经网络端侧模型。训练过程中产生的权重更新会实时融合到模型中，导出时将打包为一个完整的特定版本模型（不再分离基础模型和增量权重）。
             </p>
 
-            <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-zinc-50 border border-zinc-100 p-4 rounded-xl">
                     <div className="text-[10px] text-zinc-400 mb-1 uppercase tracking-wider">Params</div>
                     <div className="text-xl font-mono text-zinc-800">{fusedNodeCount}</div>
@@ -138,6 +138,24 @@ export default function CustomTab({ engine }: { engine: Engine }) {
                     <div className="text-[10px] text-zinc-400 mb-1 uppercase tracking-wider">Custom Tokens</div>
                     <div className="text-xl font-mono text-zinc-800">{customVocabCount}</div>
                 </div>
+            </div>
+
+            <div className="mb-8">
+                <h3 className="text-sm font-medium text-zinc-700 mb-3 ml-1">计算引擎后端选择</h3>
+                <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+                    <select 
+                        value={engine.backend} 
+                        onChange={(e) => engine.setBackend(e.target.value as any)}
+                        className="w-full bg-transparent p-3 text-sm text-zinc-700 outline-none hover:bg-zinc-50 cursor-pointer transition-colors"
+                    >
+                        <option value="cpu">CPU (主线程 JS)</option>
+                        <option value="worker">Web Worker (真实多线程并发)</option>
+                        <option value="wasm">WebAssembly (模拟桥接)</option>
+                        <option value="webgl">WebGL (模拟着色器)</option>
+                        <option value="webgpu">WebGPU (模拟核心)</option>
+                    </select>
+                </div>
+                <p className="text-xs text-zinc-400 mt-2 ml-1">部分图形后端在小矩阵运算上会有调度损耗，通常对超大规模字典更为有效。</p>
             </div>
 
             <div className="flex flex-col gap-4 mb-8 relative">
